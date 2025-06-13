@@ -250,5 +250,49 @@ class DatabazeKnihMetadataProvider : MetadataProvider {
             tocDoc.select("table.new.odtop_big td").forEach { td ->
                 val a = td.selectFirst("a")
                 if (a != null) {
-                    val
-
+                    val title = a.text()
+                    if (!title.isNullOrBlank()) {
+                        if (tocEntries == null) tocEntries = mutableListOf()
+                        tocEntries!!.add(title)
+                    }
+                }
+            }
+        }
+
+        // --- Fill metadata object
+        meta.title = meta.title ?: ""
+        meta.authors = authors
+        meta.tags = tags.toList()
+        meta.series = series
+        meta.description = description
+        meta.rating = rating
+        meta.language = language
+        meta.publishedDate = pubDate?.toString()
+        meta.pageCount = pages?.toIntOrNull()
+        meta.format = format
+        meta.isbn = isbn
+        meta.toc = tocEntries
+        meta.translatedFromTitle = translatedFromTitle
+        meta.firstPublicationDate = firstPublicationDate?.toString()
+        meta.publishers = publishers.toList()
+        return if (meta.title?.isNotEmpty() == true) meta else null
+    }
+
+    /** Parse partial date strings like "2007" or "10.10.2007" */
+    private fun parsePartialDate(text: String): LocalDate? {
+        val trimmed = text.trim()
+        return try {
+            when {
+                Regex("""\d{4}-\d{2}-\d{2}""").matches(trimmed) -> LocalDate.parse(trimmed)
+                Regex("""\d{2}\.\d{2}\.\d{4}""").matches(trimmed) -> {
+                    val parts = trimmed.split('.')
+                    LocalDate.of(parts[2].toInt(), parts[1].toInt(), parts[0].toInt())
+                }
+                Regex("""\d{4}""").matches(trimmed) -> LocalDate.of(trimmed.toInt(), 1, 1)
+                else -> null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+}
